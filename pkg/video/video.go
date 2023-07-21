@@ -43,8 +43,6 @@ func Merge(audio string, video string) (r *io.ReadCloser, err error) {
 	aFile, _ := os.CreateTemp("", "audio_*")
 	defer vFile.Close()
 	defer aFile.Close()
-	defer os.Remove(vFile.Name())
-	defer os.Remove(aFile.Name())
 
 	io.Copy(vFile, *videoData)
 	io.Copy(aFile, *audioData)
@@ -57,6 +55,14 @@ func Merge(audio string, video string) (r *io.ReadCloser, err error) {
 	if err != nil {
 		return
 	}
+
+	// After the command has finished, delete the old input files.
+	// There might be a better way to handle this, such that the files get deleted if cmd.Start() fails
+	go func() {
+		cmd.Wait()
+		os.Remove(vFile.Name())
+		os.Remove(aFile.Name())
+	}()
 
 	// Read the file into memory
 	r = &output
