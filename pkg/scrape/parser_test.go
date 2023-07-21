@@ -30,7 +30,7 @@ func init() {
 
 func BenchmarkParser(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_, _, err := parse(str)
+		_, _, _, err := parse(str)
 		if err != nil {
 			b.Fatal(err)
 		}

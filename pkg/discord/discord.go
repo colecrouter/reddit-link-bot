@@ -9,15 +9,19 @@ import (
 )
 
 func ToDiscordMessage(URL string) (msg discordgo.MessageSend, err error) {
-	a, v, err := scrape.Scrape(URL)
+	a, v, spoiler, err := scrape.Scrape(URL)
 	if err != nil {
 		fmt.Println(err)
 		return discordgo.MessageSend{}, err
 	}
 
 	if a == "" {
+		content := v
+		if spoiler {
+			content = fmt.Sprintf("|| %s ||", v)
+		}
 		msg = discordgo.MessageSend{
-			Content: v,
+			Content: content,
 		}
 	} else {
 		f2, err := video.Merge(a, v)
@@ -26,9 +30,13 @@ func ToDiscordMessage(URL string) (msg discordgo.MessageSend, err error) {
 			return discordgo.MessageSend{}, err
 		}
 
+		filename := "video.mp4"
+		if spoiler {
+			filename = "SPOILER_video.mp4"
+		}
 		msg = discordgo.MessageSend{
 			Files: []*discordgo.File{
-				{Name: "video.mp4", Reader: *f2, ContentType: "video/mp4"},
+				{Name: filename, Reader: *f2, ContentType: "video/mp4"},
 			},
 		}
 	}

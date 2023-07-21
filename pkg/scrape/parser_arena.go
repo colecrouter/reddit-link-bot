@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func parse(b *[]byte) (audio string, video string, err error) {
+func parse(b *[]byte) (audio string, video string, spoiler bool, err error) {
 	a := arena.NewArena()
 	defer a.Free()
 
@@ -39,6 +39,8 @@ func parse(b *[]byte) (audio string, video string, err error) {
 	} else { // Otherwise it's an image
 		video = listings[0].Data.Children[0].Data.URLOverriddenByDest
 	}
+
+	spoiler = listings[0].Data.Children[0].Data.Spoiler || listings[0].Data.Children[0].Data.Over18
 
 	return
 }
