@@ -21,7 +21,7 @@ func init() {
 		os.Exit(1)
 	}
 
-	str, err = read(body)
+	str, err = readRedditResponse(body)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -39,7 +39,7 @@ func BenchmarkParser(b *testing.B) {
 
 func BenchmarkReader(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_, err := read(body)
+		_, err := readRedditResponse(body)
 		if err != nil {
 			b.Fatal(err)
 		}

@@ -2,6 +2,7 @@ package discord
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Mexican-Man/reddit-bot/pkg/scrape"
 	"github.com/Mexican-Man/reddit-bot/pkg/video"
@@ -11,9 +12,11 @@ import (
 func ToDiscordMessage(URL string) (msg discordgo.MessageSend, err error) {
 	a, v, spoiler, err := scrape.Scrape(URL)
 	if err != nil {
-		fmt.Println(err)
 		return discordgo.MessageSend{}, err
 	}
+
+	// This is to help with rate limiting
+	time.Sleep(time.Second)
 
 	if a == "" {
 		content := v
@@ -26,7 +29,6 @@ func ToDiscordMessage(URL string) (msg discordgo.MessageSend, err error) {
 	} else {
 		f2, err := video.Merge(a, v)
 		if err != nil {
-			fmt.Println(err)
 			return discordgo.MessageSend{}, err
 		}
 

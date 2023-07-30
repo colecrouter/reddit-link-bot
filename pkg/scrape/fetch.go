@@ -22,7 +22,7 @@ func Fetch(u string) (b *io.ReadCloser, err error) {
 			break
 		}
 
-		fmt.Println("Rate limited, waiting")
+		fmt.Println("rate limited, waiting")
 		<-time.After(time.Second * 30)
 	}
 

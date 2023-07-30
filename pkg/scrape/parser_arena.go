@@ -6,8 +6,10 @@ import (
 	"arena"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
-	"strings"
+
+	"github.com/unki2aut/go-mpd"
 )
 
 func parse(b *[]byte) (audio string, video string, spoiler bool, err error) {
@@ -33,10 +35,38 @@ func parse(b *[]byte) (audio string, video string, spoiler bool, err error) {
 		return
 	}
 
-	if strings.HasPrefix(listings[0].Data.Children[0].Data.URLOverriddenByDest, "https://v.") { // v subdomain means video
-		audio, _ = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, "DASH_audio.mp4")
-		video = listings[0].Data.Children[0].Data.SecureMedia.RedditVideo.FallbackURL
-	} else { // Otherwise it's an image
+	if listings[0].Data.Children[0].Data.IsVideo {
+		var body *io.ReadCloser
+		body, err = Fetch(listings[0].Data.Children[0].Data.SecureMedia.RedditVideo.DashURL)
+		if err != nil {
+			return
+		}
+		defer (*body).Close()
+
+		var bytes = arena.MakeSlice[byte](a, 0, 10240)
+		bytes, err = io.ReadAll(*body)
+		if err != nil {
+			return
+		}
+
+		// TODO idk if this is doing anything
+		mpd := arena.New[mpd.MPD](a)
+		err = mpd.Decode(bytes)
+		if err != nil {
+			return
+		}
+
+		for _, adaptationSet := range mpd.Period[0].AdaptationSets {
+			if *adaptationSet.ContentType == "audio" {
+				audio, err = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, adaptationSet.Representations[len(adaptationSet.Representations)-1].BaseURL[0].Value)
+			} else if *adaptationSet.ContentType == "video" {
+				video, err = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, adaptationSet.Representations[len(adaptationSet.Representations)-1].BaseURL[0].Value)
+			}
+			if err != nil {
+				return
+			}
+		}
+	} else {
 		video = listings[0].Data.Children[0].Data.URLOverriddenByDest
 	}
 

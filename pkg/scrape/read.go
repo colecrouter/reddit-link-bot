@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-func read(r *io.ReadCloser) (b *[]byte, err error) {
+func readRedditResponse(r *io.ReadCloser) (b *[]byte, err error) {
 	defer (*r).Close()
 
 	// Read into byte slice

@@ -17,7 +17,7 @@ func Scrape(URL string) (audioURL string, videoURL string, spoiler bool, err err
 
 	u, err := url.Parse(URL)
 	if err != nil {
-		fmt.Printf("unable to parse URL: %v", err)
+		err = fmt.Errorf("unable to parse URL: %v", err)
 		return
 	}
 
@@ -30,7 +30,7 @@ func Scrape(URL string) (audioURL string, videoURL string, spoiler bool, err err
 		return
 	}
 
-	str, err := read(body)
+	str, err := readRedditResponse(body)
 	if err != nil {
 		return
 	}
