@@ -4,11 +4,13 @@ package scrape
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net/url"
 
-	"github.com/unki2aut/go-mpd"
+	"github.com/Mexican-Man/reddit-bot/pkg/fetch"
+	"github.com/Mexican-Man/reddit-bot/pkg/media"
 )
 
 func parse(b *[]byte) (audio string, video string, spoiler bool, err error) {
@@ -33,34 +35,27 @@ func parse(b *[]byte) (audio string, video string, spoiler bool, err error) {
 
 	if listings[0].Data.Children[0].Data.IsVideo {
 		var body *io.ReadCloser
-		body, err = Fetch(listings[0].Data.Children[0].Data.SecureMedia.RedditVideo.DashURL)
+		body, err = fetch.Fetch(listings[0].Data.Children[0].Data.SecureMedia.RedditVideo.DashURL)
 		if err != nil {
 			return
 		}
 		defer (*body).Close()
 
-		var bytes []byte
-		bytes, err = io.ReadAll(*body)
+		bytes, _ := io.ReadAll(*body)
+
+		mpd := new(media.MPD)
+		err = xml.Unmarshal(bytes, mpd)
 		if err != nil {
 			return
 		}
 
-		mpd := new(mpd.MPD)
-		err = mpd.Decode(bytes)
+		audio, video, err = mpd.GetMediaLinks()
 		if err != nil {
 			return
 		}
 
-		for _, adaptationSet := range mpd.Period[0].AdaptationSets {
-			if *adaptationSet.ContentType == "audio" {
-				audio, err = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, adaptationSet.Representations[len(adaptationSet.Representations)-1].BaseURL[0].Value)
-			} else if *adaptationSet.ContentType == "video" {
-				video, err = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, adaptationSet.Representations[len(adaptationSet.Representations)-1].BaseURL[0].Value)
-			}
-			if err != nil {
-				return
-			}
-		}
+		audio, _ = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, audio)
+		video, _ = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, video)
 	} else {
 		video = listings[0].Data.Children[0].Data.URLOverriddenByDest
 	}

@@ -1,4 +1,4 @@
-package video
+package media
 
 import (
 	"io"
@@ -12,9 +12,7 @@ func TestMerge(t *testing.T) {
 	v, err := Merge(testAudio, testVideo)
 	if err != nil {
 		t.Error(err)
-	}
-
-	if v == nil {
+	} else if v == nil {
 		t.Error("video is nil")
 	}
 

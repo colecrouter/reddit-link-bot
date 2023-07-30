@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Mexican-Man/reddit-bot/pkg/media"
 	"github.com/Mexican-Man/reddit-bot/pkg/scrape"
-	"github.com/Mexican-Man/reddit-bot/pkg/video"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -27,7 +27,7 @@ func ToDiscordMessage(URL string) (msg discordgo.MessageSend, err error) {
 			Content: content,
 		}
 	} else {
-		f2, err := video.Merge(a, v)
+		f2, err := media.Merge(a, v)
 		if err != nil {
 			return discordgo.MessageSend{}, err
 		}

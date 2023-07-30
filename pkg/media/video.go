@@ -1,4 +1,4 @@
-package video
+package media
 
 import (
 	"io"
@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"sync"
 
-	"github.com/Mexican-Man/reddit-bot/pkg/scrape"
+	"github.com/Mexican-Man/reddit-bot/pkg/fetch"
 )
 
 func Merge(audio string, video string) (r *io.ReadCloser, err error) {
@@ -19,12 +19,12 @@ func Merge(audio string, video string) (r *io.ReadCloser, err error) {
 	wg.Add(2)
 
 	go func() {
-		videoData, err1 = scrape.Fetch(video)
+		videoData, err1 = fetch.Fetch(video)
 		wg.Done()
 	}()
 
 	go func() {
-		audioData, err2 = scrape.Fetch(audio)
+		audioData, err2 = fetch.Fetch(audio)
 		wg.Done()
 	}()
 

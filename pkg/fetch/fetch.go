@@ -1,4 +1,4 @@
-package scrape
+package fetch
 
 import (
 	"fmt"
@@ -12,7 +12,17 @@ func Fetch(u string) (b *io.ReadCloser, err error) {
 	var resp *http.Response
 
 	for {
-		resp, err = http.Get(u)
+		// Set user agent
+		var req *http.Request
+		req, err = http.NewRequest("GET", u, nil)
+		if err != nil {
+			err = fmt.Errorf("unable to create GET request: %w", err)
+			return
+		}
+
+		req.Header.Set("User-Agent", "discord-bot 1.0.0")
+
+		resp, err = http.DefaultClient.Do(req)
 		if err != nil {
 			err = fmt.Errorf("unable to GET URL: %w", err)
 			return

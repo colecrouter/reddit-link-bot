@@ -37,17 +37,16 @@ func main() {
 	// Connect
 	err = discord.Open()
 	if err != nil {
-		fmt.Println("error opening connection,", err)
+		fmt.Printf("error opening connection: %+v\n", err)
 		return
 	}
+
+	defer discord.Close()
 
 	// Stop from closing
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
-
-	// Cleanly close down the Discord session.
-	discord.Close()
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {

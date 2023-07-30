@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-func readRedditResponse(r *io.ReadCloser) (b *[]byte, err error) {
+func readRedditResponse(r *io.ReadCloser) (b []byte, err error) {
 	defer (*r).Close()
 
 	// Read into byte slice
@@ -30,7 +30,7 @@ func readRedditResponse(r *io.ReadCloser) (b *[]byte, err error) {
 	}
 
 	trimmed := bytes[:total]
-	b = &trimmed
+	b = trimmed
 
 	return
 }

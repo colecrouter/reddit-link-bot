@@ -5,19 +5,21 @@ package scrape
 import (
 	"arena"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net/url"
 
-	"github.com/unki2aut/go-mpd"
+	"github.com/Mexican-Man/reddit-bot/pkg/fetch"
+	"github.com/Mexican-Man/reddit-bot/pkg/media"
 )
 
-func parse(b *[]byte) (audio string, video string, spoiler bool, err error) {
+func parse(b []byte) (audio string, video string, spoiler bool, err error) {
 	a := arena.NewArena()
 	defer a.Free()
 
 	response := arena.MakeSlice[thing](a, 1, 1)
-	err = json.Unmarshal(*b, &response)
+	err = json.Unmarshal(b, &response)
 	if err != nil {
 		return
 	}
@@ -30,42 +32,35 @@ func parse(b *[]byte) (audio string, video string, spoiler bool, err error) {
 
 	// Since we know it's a listing, we can unmarshal it again into a Listing struct
 	listings := arena.MakeSlice[listing](a, 1, 1)
-	err = json.Unmarshal(*b, &listings)
+	err = json.Unmarshal(b, &listings)
 	if err != nil {
 		return
 	}
 
 	if listings[0].Data.Children[0].Data.IsVideo {
 		var body *io.ReadCloser
-		body, err = Fetch(listings[0].Data.Children[0].Data.SecureMedia.RedditVideo.DashURL)
+		body, err = fetch.Fetch(listings[0].Data.Children[0].Data.SecureMedia.RedditVideo.DashURL)
 		if err != nil {
 			return
 		}
 		defer (*body).Close()
 
-		var bytes = arena.MakeSlice[byte](a, 0, 10240)
-		bytes, err = io.ReadAll(*body)
+		bytes, _ := io.ReadAll(*body)
+
+		mpd := arena.New[media.MPD](a)
+		err = xml.Unmarshal(bytes, mpd)
 		if err != nil {
 			return
 		}
 
-		// TODO idk if this is doing anything
-		mpd := arena.New[mpd.MPD](a)
-		err = mpd.Decode(bytes)
+		audio, video, err = mpd.GetMediaLinks()
 		if err != nil {
 			return
 		}
 
-		for _, adaptationSet := range mpd.Period[0].AdaptationSets {
-			if *adaptationSet.ContentType == "audio" {
-				audio, err = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, adaptationSet.Representations[len(adaptationSet.Representations)-1].BaseURL[0].Value)
-			} else if *adaptationSet.ContentType == "video" {
-				video, err = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, adaptationSet.Representations[len(adaptationSet.Representations)-1].BaseURL[0].Value)
-			}
-			if err != nil {
-				return
-			}
-		}
+		audio, _ = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, audio)
+		video, _ = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, video)
+
 	} else {
 		video = listings[0].Data.Children[0].Data.URLOverriddenByDest
 	}
