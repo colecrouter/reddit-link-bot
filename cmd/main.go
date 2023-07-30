@@ -70,20 +70,24 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	newM, err := discord.ToDiscordMessage(m.Content)
 	if err != nil {
-		fmt.Println(err)
-		return
+		goto ERROR
 	}
 
 	_, err = s.ChannelMessageSendComplex(m.ChannelID, &newM)
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "HTTP 413") {
-			// React with emoji
 			s.MessageReactionAdd(m.ChannelID, m.ID, "🥵")
 			return
 		}
 
-		fmt.Println(err)
+		goto ERROR
 	}
+
+	return
+
+ERROR:
+	s.MessageReactionAdd(m.ChannelID, m.ID, "😵")
+	fmt.Printf("%+v\n", err)
 }
 
 func ready(s *discordgo.Session, e *discordgo.Ready) {
