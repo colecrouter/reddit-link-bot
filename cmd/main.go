@@ -61,7 +61,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	if len(m.Content) < 23 || m.Content[:23] != "https://www.reddit.com/" {
+	if (len(m.Content) < 23 || m.Content[:23] != "https://www.reddit.com/") && (len(m.Content) < 19 || m.Content[:19] != "https://reddit.com/") {
 		return
 	}
 
