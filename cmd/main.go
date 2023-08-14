@@ -13,6 +13,7 @@ import (
 )
 
 func main() {
+
 	// Load config
 	cfg := config.Config{}
 	err := cfg.Load()

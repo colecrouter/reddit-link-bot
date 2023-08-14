@@ -1,7 +1,6 @@
 package scrape
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -23,7 +22,7 @@ func init() {
 		os.Exit(1)
 	}
 
-	str, err = readRedditResponse(body)
+	str, err = io.ReadAll(io.TeeReader(*body, os.Stdout))
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -32,21 +31,9 @@ func init() {
 
 func BenchmarkParser(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_, _, _, err := parse(str)
+		_, _, err := parse(*body)
 		if err != nil {
 			b.Fatal(err)
 		}
 	}
-}
-
-func BenchmarkReader(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		_, err := readRedditResponse(body)
-		if err != nil {
-			b.Fatal(err)
-		}
-
-		*body = io.NopCloser(bytes.NewReader(str))
-	}
-
 }

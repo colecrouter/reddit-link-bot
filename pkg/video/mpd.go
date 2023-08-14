@@ -1,4 +1,4 @@
-package media
+package video
 
 import (
 	"encoding/xml"
@@ -101,7 +101,8 @@ func (r *RepresentationList) UnmarshalXML(d *xml.Decoder, start xml.StartElement
 		err = d.DecodeElement(&v, &start)
 		*r = append(*r, v)
 	default:
-		return fmt.Errorf("unknown contentType: %s", setType)
+		var v interface{}
+		d.DecodeElement(&v, &start)
 	}
 
 	return err

@@ -1,4 +1,4 @@
-package media
+package video
 
 import (
 	"io"
