@@ -67,8 +67,13 @@ func parse(r io.Reader) (output []Media, spoiler bool, err error) {
 				return nil, false, err
 			}
 
-			output[0].AudioURL, _ = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, audio)
-			output[0].VideoURL, _ = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, video)
+			if audio != "" {
+				output[0].AudioURL, _ = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, audio)
+			}
+			if video != "" {
+				output[0].VideoURL, _ = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, video)
+			}
+
 		} else {
 			output[0].VideoURL = listings[0].Data.Children[0].Data.URLOverriddenByDest
 		}
