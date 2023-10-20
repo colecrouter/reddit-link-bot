@@ -82,8 +82,7 @@ func parse(r io.Reader) (output []Media, spoiler bool, err error) {
 		i := 0
 		for _, v := range *listings[0].Data.Children[0].Data.MediaMetadata {
 			// These ones have ampersands which will have been escaped by json.Unmarshal
-			// The list is always backwards, so we have to go in reverse
-			output[numMedia-i-1].VideoURL = strings.Replace(v.Source.URL, "&amp;", "&", -1)
+			output[i].VideoURL = strings.Replace(v.Source.URL, "&amp;", "&", -1)
 			i++
 		}
 	}
