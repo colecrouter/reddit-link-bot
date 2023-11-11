@@ -44,7 +44,7 @@ func ToDiscordMessage(URL string) (msg discordgo.MessageSend, err error) {
 		}
 	}
 
-	if spoiler {
+	if spoiler && msg.Content != "" {
 		msg.Content = fmt.Sprintf("|| %s ||", msg.Content)
 	}
 
