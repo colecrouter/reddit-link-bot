@@ -68,19 +68,21 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	s.ChannelTyping(m.ChannelID)
 
-	newM, err := discord.ToDiscordMessage(m.Content)
+	newM, err := discord.ToDiscordMessages(m.Content)
 	if err != nil {
 		goto ERROR
 	}
 
-	_, err = s.ChannelMessageSendComplex(m.ChannelID, &newM)
-	if err != nil {
-		if strings.HasPrefix(err.Error(), "HTTP 413") {
-			s.MessageReactionAdd(m.ChannelID, m.ID, "🥵")
-			return
-		}
+	for i := range newM {
+		_, err = s.ChannelMessageSendComplex(m.ChannelID, &newM[i])
+		if err != nil {
+			if strings.HasPrefix(err.Error(), "HTTP 413") {
+				s.MessageReactionAdd(m.ChannelID, m.ID, "🥵")
+				return
+			}
 
-		goto ERROR
+			goto ERROR
+		}
 	}
 
 	return

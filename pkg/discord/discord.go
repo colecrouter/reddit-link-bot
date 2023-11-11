@@ -9,44 +9,73 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func ToDiscordMessage(URL string) (msg discordgo.MessageSend, err error) {
+func ToDiscordMessages(URL string) ([]discordgo.MessageSend, error) {
 	media, spoiler, err := scrape.Scrape(URL)
 	if err != nil {
-		return discordgo.MessageSend{}, err
+		return nil, err
 	}
 
-	// This is to help with rate limiting
-	time.Sleep(time.Second)
+	const maxImagesPerMessage = 5
+	const maxVideosPerMessage = 10
+
+	var messages []discordgo.MessageSend
+	var currentMessage discordgo.MessageSend
+
+	imageCount, videoCount := 0, 0
+
+	// Helper function to add a new message to messages slice
+	addNewMessage := func() {
+		if currentMessage.Content != "" || len(currentMessage.Files) > 0 {
+			messages = append(messages, currentMessage)
+		}
+		currentMessage = discordgo.MessageSend{}
+		imageCount, videoCount = 0, 0
+	}
 
 	for _, m := range media {
+		// This is to help with rate limiting
+		time.Sleep(time.Second)
+
 		if m.AudioURL == "" {
-			// Newline for each non-first link
-			if msg.Content != "" {
-				msg.Content += "\n"
+			// Check if the currentMessage needs to be split due to image count
+			if imageCount >= maxImagesPerMessage {
+				addNewMessage()
 			}
 
-			msg.Content += m.VideoURL
+			// Newline for each non-first link or if the content is not empty
+			if currentMessage.Content != "" {
+				currentMessage.Content += "\n"
+			}
+			urlContent := m.VideoURL
+			if spoiler {
+				urlContent = fmt.Sprintf("|| %s ||", urlContent)
+			}
+			currentMessage.Content += urlContent
+			imageCount++
 		} else {
+			// Check if the currentMessage needs to be split due to video count
+			if videoCount >= maxVideosPerMessage {
+				addNewMessage()
+			}
+
 			f2, err := video.Merge(m.AudioURL, m.VideoURL)
 			if err != nil {
-				return discordgo.MessageSend{}, err
+				return nil, err
 			}
 
 			filename := "video.mp4"
 			if spoiler {
 				filename = "SPOILER_video.mp4"
 			}
-			msg = discordgo.MessageSend{
-				Files: []*discordgo.File{
-					{Name: filename, Reader: *f2, ContentType: "video/mp4"},
-				},
-			}
+			currentMessage.Files = append(currentMessage.Files, &discordgo.File{
+				Name: filename, Reader: *f2, ContentType: "video/mp4",
+			})
+			videoCount++
 		}
 	}
 
-	if spoiler && msg.Content != "" {
-		msg.Content = fmt.Sprintf("|| %s ||", msg.Content)
-	}
+	// Add the last message, if any content or files are present
+	addNewMessage()
 
-	return
+	return messages, nil
 }
