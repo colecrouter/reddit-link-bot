@@ -9,10 +9,10 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func ToDiscordMessages(URL string) ([]discordgo.MessageSend, error) {
-	media, spoiler, err := scrape.Scrape(URL)
+func ToDiscordMessages(URL string) (msgs []discordgo.MessageSend, nsfw bool, err error) {
+	media, spoiler, nsfw, err := scrape.Scrape(URL)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	const maxImagesPerMessage = 5
@@ -47,7 +47,7 @@ func ToDiscordMessages(URL string) ([]discordgo.MessageSend, error) {
 				currentMessage.Content += "\n"
 			}
 			urlContent := m.VideoURL
-			if spoiler {
+			if spoiler || nsfw {
 				urlContent = fmt.Sprintf("|| %s ||", urlContent)
 			}
 			currentMessage.Content += urlContent
@@ -60,7 +60,7 @@ func ToDiscordMessages(URL string) ([]discordgo.MessageSend, error) {
 
 			f2, err := video.Merge(m.AudioURL, m.VideoURL)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 
 			filename := "video.mp4"
@@ -77,5 +77,5 @@ func ToDiscordMessages(URL string) ([]discordgo.MessageSend, error) {
 	// Add the last message, if any content or files are present
 	addNewMessage()
 
-	return messages, nil
+	return messages, nsfw, nil
 }

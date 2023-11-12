@@ -12,10 +12,12 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+var cfg config.Config
+
 func main() {
 
 	// Load config
-	cfg := config.Config{}
+	cfg = config.Config{}
 	err := cfg.Load()
 	if err != nil {
 		fmt.Println(err)
@@ -57,9 +59,50 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}()
 
+	var messages []discordgo.MessageSend
+	var nsfw bool
+	var err error
+
 	// Ignore messages from bots
 	if m.Author.Bot {
 		return
+	}
+
+	// Check roles
+	if len(cfg.Roles) > 0 {
+		member, err := s.GuildMember(m.GuildID, m.Author.ID)
+		if err != nil {
+			goto ERROR
+		}
+
+		hasRole := false
+		for _, role := range cfg.Roles {
+			for _, memberRole := range member.Roles {
+				if role == memberRole {
+					hasRole = true
+					break
+				}
+			}
+		}
+
+		if !hasRole {
+			return
+		}
+	}
+
+	// Check channels
+	if len(cfg.Channels) > 0 {
+		hasChannel := false
+		for _, channel := range cfg.Channels {
+			if channel == m.ChannelID {
+				hasChannel = true
+				break
+			}
+		}
+
+		if !hasChannel {
+			return
+		}
 	}
 
 	if (len(m.Content) < 23 || m.Content[:23] != "https://www.reddit.com/") && (len(m.Content) < 19 || m.Content[:19] != "https://reddit.com/") {
@@ -68,13 +111,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	s.ChannelTyping(m.ChannelID)
 
-	newM, err := discord.ToDiscordMessages(m.Content)
+	messages, nsfw, err = discord.ToDiscordMessages(m.Content)
 	if err != nil {
 		goto ERROR
 	}
 
-	for i := range newM {
-		_, err = s.ChannelMessageSendComplex(m.ChannelID, &newM[i])
+	// Check if the message is NSFW
+	if cfg.NoNSFW && nsfw {
+		s.MessageReactionAdd(m.ChannelID, m.ID, "🔞")
+		return
+	}
+
+	for _, msg := range messages {
+		_, err = s.ChannelMessageSendComplex(m.ChannelID, &msg)
 		if err != nil {
 			if strings.HasPrefix(err.Error(), "HTTP 413") {
 				s.MessageReactionAdd(m.ChannelID, m.ID, "🥵")

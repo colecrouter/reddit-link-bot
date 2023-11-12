@@ -7,24 +7,22 @@ import (
 )
 
 type Config struct {
-	DiscordToken string `yaml:"discord_token"`
+	DiscordToken string   `yaml:"discord_token"`
+	Channels     []string `yaml:"channels"`
+	Roles        []string `yaml:"roles"`
+	NoNSFW       bool     `yaml:"no_nsfw"`
 }
 
 func (c *Config) Load() error {
 	// Read and write back the config file
 	// This is to ensure any new fields are added to the config file
 
-	f, err := os.OpenFile("./config.yml", os.O_RDWR|os.O_CREATE, 0755)
+	f, err := os.OpenFile("./config.yml", os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}
 
 	defer f.Close()
-
-	// Create a default config
-	def := &Config{
-		DiscordToken: "token",
-	}
 
 	// Read the config file
 	b, err := os.ReadFile("./config.yml")
@@ -38,13 +36,13 @@ func (c *Config) Load() error {
 		return err
 	}
 
-	// Marshal the default config
-	b, err = yaml.Marshal(def)
+	// Marshal the (potentially updated) config file
+	b, err = yaml.Marshal(c)
 	if err != nil {
 		return err
 	}
 
-	// Write the default config back to the file
+	// Write the new config back to the file
 	_, err = f.Write(b)
 	if err != nil {
 		return err

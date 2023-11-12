@@ -23,6 +23,17 @@ go run ./cmd/main.go
 
 This will generate a `config.yml` file in the current directory. Insert your Discord bot token and restart the bot.
 
+### Configuration
+
+You can tweak the settings to only allow the bot to respond in certain channels or to certain roles. You can also disable NSFW content.
+
+```yml
+discord_token: ""
+channels: []
+roles: []
+no_nsfw: false
+```
+
 ## Requirements
 
 - Must have FFMPEG installed and exported/added to PATH. Does not require FFMPEG build with HTTPS support.

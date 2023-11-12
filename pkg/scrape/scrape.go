@@ -12,7 +12,7 @@ import (
 
 var regex = regexp.MustCompile(`(?:http|https):\/\/(?:www\.)?reddit\.com\/r\/([a-zA-Z0-9_]+)\/(comments|s)\/([a-zA-Z0-9_]+)?`)
 
-func Scrape(URL string) (media []Media, spoiler bool, err error) {
+func Scrape(URL string) (media []Media, spoiler bool, nsfw bool, err error) {
 	groups := regex.FindAllStringSubmatch(URL, -1)
 	if len(groups[0]) == 0 {
 		err = fmt.Errorf("URL is not a reddit post")
@@ -38,7 +38,7 @@ func Scrape(URL string) (media []Media, spoiler bool, err error) {
 		return
 	}
 
-	media, spoiler, err = parse(*body)
+	media, spoiler, nsfw, err = parse(*body)
 	if err != nil {
 		return
 	}

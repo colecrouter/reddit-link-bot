@@ -12,8 +12,8 @@ import (
 	"github.com/Mexican-Man/reddit-bot/pkg/video"
 )
 
-// parse attempts to parse the JSON response from reddit, and returns the Media objects, as well as whether it needs to be a spoiler
-func parse(r io.Reader) (output []Media, spoiler bool, err error) {
+// parse attempts to parse the JSON response from reddit, and returns the Media objects, as well as whether it contains a spoiler or is NSFW
+func parse(r io.Reader) (output []Media, spoiler bool, nsfw bool, err error) {
 	// Since we know it's a listing, we can unmarshal it again into a Listing struct
 	var listings []listing
 	err = json.NewDecoder(r).Decode(&listings)
@@ -24,7 +24,7 @@ func parse(r io.Reader) (output []Media, spoiler bool, err error) {
 
 	// Check if kind is listing
 	if listings[0].Kind != "Listing" {
-		return nil, false, fmt.Errorf("kind is %s, not \"Listing\"", listings[0].Kind)
+		return nil, false, false, fmt.Errorf("kind is %s, not \"Listing\"", listings[0].Kind)
 	}
 
 	// Post should always be first listing
@@ -37,7 +37,8 @@ func parse(r io.Reader) (output []Media, spoiler bool, err error) {
 	}
 	output = make([]Media, numMedia)
 
-	spoiler = listings[0].Data.Children[0].Data.Spoiler || listings[0].Data.Children[0].Data.Over18
+	spoiler = listings[0].Data.Children[0].Data.Spoiler
+	nsfw = listings[0].Data.Children[0].Data.Over18
 
 	if numMedia == 1 {
 		// Default behaviour
@@ -64,7 +65,7 @@ func parse(r io.Reader) (output []Media, spoiler bool, err error) {
 
 			audio, video, err := mpd.GetMediaLinks()
 			if err != nil {
-				return nil, false, err
+				return nil, false, false, err
 			}
 
 			if audio != "" {
