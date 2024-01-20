@@ -17,7 +17,7 @@ var body io.Reader
 var str []byte
 
 func init() {
-	u, err := url.Parse(TEST_URL)
+	u, _ := url.Parse(TEST_URL)
 
 	resp, err := fetch.Fetch(u)
 	if err != nil {

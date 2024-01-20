@@ -2,6 +2,7 @@ package scrape
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"path"
 	"regexp"
@@ -34,7 +35,12 @@ func Scrape(URL string) (media []Media, spoiler bool, nsfw bool, err error) {
 		}
 
 		u, _ := url.Parse(URL)
-		resp, _ := fetch.Fetch(u)
+		var resp *http.Response
+		resp, err = fetch.Fetch(u)
+		if err != nil {
+			return
+		}
+
 		URL = resp.Request.URL.String()
 
 		time.Sleep(1 * time.Second)
