@@ -1,31 +1,36 @@
 package fetch
 
 import (
+	"compress/gzip"
 	"fmt"
-	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 )
 
-func Fetch(u string) (b *io.ReadCloser, err error) {
+func Fetch(URL *url.URL) (*http.Response, error) {
 	var resp *http.Response
 
 	for {
-		// Set user agent
-		var req *http.Request
-		req, err = http.NewRequest("GET", u, nil)
+		time.Sleep(time.Millisecond * 100)
+
+		req, err := http.NewRequest("GET", URL.String(), nil)
 		if err != nil {
-			err = fmt.Errorf("unable to create GET request: %w", err)
-			return
+			return nil, fmt.Errorf("unable to create GET request: %w", err)
 		}
 
-		req.Header.Set("User-Agent", "discord-bot 1.0.0")
+		req.Header.Set("authority", "www.reddit.com")
+		req.Header.Set("method", "GET")
+		req.Header.Set("path", URL.Path)
+
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+		req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
+		req.Header.Set("Accept-Encoding", "gzip, deflate, br")
 
 		resp, err = http.DefaultClient.Do(req)
 		if err != nil {
-			err = fmt.Errorf("unable to GET URL: %w", err)
-			return
+			return nil, fmt.Errorf("unable to GET URL: %w", err)
 		}
 
 		if resp.StatusCode != http.StatusTooManyRequests {
@@ -37,15 +42,21 @@ func Fetch(u string) (b *io.ReadCloser, err error) {
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		err = fmt.Errorf("unable to GET URL: %w", os.ErrNotExist)
+		return nil, fmt.Errorf("unable to GET URL: %w", os.ErrNotExist)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("unable to GET URL: %s", resp.Status)
-		return
+		return nil, fmt.Errorf("unable to GET URL: %s", resp.Status)
 	}
 
-	b = &resp.Body
+	// Handle compression
+	if resp.Header.Get("Content-Encoding") == "gzip" {
+		var err error
+		resp.Body, err = gzip.NewReader(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create gzip reader: %w", err)
+		}
+	}
 
-	return
+	return resp, nil
 }

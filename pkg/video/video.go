@@ -2,6 +2,8 @@ package video
 
 import (
 	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"sync"
@@ -9,22 +11,22 @@ import (
 	"github.com/Mexican-Man/reddit-bot/pkg/fetch"
 )
 
-func Merge(audio string, video string) (r *io.ReadCloser, err error) {
+func Merge(audio *url.URL, video *url.URL) (r *io.ReadCloser, err error) {
 	// We can actually pass URLs directly to ffmpeg, but that requires a special
 	// build of ffmpeg with HTTPS enabled. Instead, we'll download the files manually
 
 	var err1, err2 error
-	var videoData, audioData *io.ReadCloser
+	var videoResp, audioResp *http.Response
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 
 	go func() {
-		videoData, err1 = fetch.Fetch(video)
+		videoResp, err1 = fetch.Fetch(video)
 		wg.Done()
 	}()
 
 	go func() {
-		audioData, err2 = fetch.Fetch(audio)
+		audioResp, err2 = fetch.Fetch(audio)
 		wg.Done()
 	}()
 
@@ -44,8 +46,8 @@ func Merge(audio string, video string) (r *io.ReadCloser, err error) {
 	defer vFile.Close()
 	defer aFile.Close()
 
-	io.Copy(vFile, *videoData)
-	io.Copy(aFile, *audioData)
+	io.Copy(vFile, videoResp.Body)
+	io.Copy(aFile, audioResp.Body)
 
 	cmd := exec.Command("ffmpeg", "-y", "-i", vFile.Name(), "-i", aFile.Name(), "-map", "0:0", "-map", "1:0", "-f", "ismv", "-c:v", "copy", "pipe:")
 	// cmd.Stderr = os.Stderr

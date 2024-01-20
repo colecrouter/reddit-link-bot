@@ -2,7 +2,6 @@ package scrape
 
 import (
 	"fmt"
-	"net/http"
 	"net/url"
 	"path"
 	"regexp"
@@ -34,8 +33,10 @@ func Scrape(URL string) (media []Media, spoiler bool, nsfw bool, err error) {
 			break
 		}
 
-		resp, _ := http.Get(URL)
+		u, _ := url.Parse(URL)
+		resp, _ := fetch.Fetch(u)
 		URL = resp.Request.URL.String()
+
 		time.Sleep(1 * time.Second)
 	}
 
@@ -46,12 +47,12 @@ func Scrape(URL string) (media []Media, spoiler bool, nsfw bool, err error) {
 	u.Path = path.Join("r", subreddit, "comments", id, ".json")
 
 	// Go to webpage, extract URL
-	body, err := fetch.Fetch(u.String())
+	resp, err := fetch.Fetch(u)
 	if err != nil {
 		return
 	}
 
-	media, spoiler, nsfw, err = parse(*body)
+	media, spoiler, nsfw, err = parse(resp.Body)
 	if err != nil {
 		return
 	}

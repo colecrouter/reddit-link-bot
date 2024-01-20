@@ -2,6 +2,7 @@ package discord
 
 import (
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/Mexican-Man/reddit-bot/pkg/scrape"
@@ -58,7 +59,10 @@ func ToDiscordMessages(URL string) (msgs []discordgo.MessageSend, nsfw bool, err
 				addNewMessage()
 			}
 
-			f2, err := video.Merge(m.AudioURL, m.VideoURL)
+			audioURL, _ := url.Parse(m.AudioURL)
+			videoURL, _ := url.Parse(m.VideoURL)
+
+			f2, err := video.Merge(audioURL, videoURL)
 			if err != nil {
 				return nil, false, err
 			}

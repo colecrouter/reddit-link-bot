@@ -1,6 +1,0 @@
-{
-    "go.buildFlags": [
-        "-tags=goexperiment.arenas"
-    ],
-    "go.testTags": "goexperiment.arenas"
-}

@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -16,8 +17,10 @@ import (
 func parse(r io.Reader) (output []Media, spoiler bool, nsfw bool, err error) {
 	// Since we know it's a listing, we can unmarshal it again into a Listing struct
 	var listings []listing
+
 	err = json.NewDecoder(r).Decode(&listings)
 	if err != nil && err != io.EOF {
+		err = fmt.Errorf("unable to decode JSON: %w", err)
 		return
 	}
 	err = nil
@@ -48,14 +51,15 @@ func parse(r io.Reader) (output []Media, spoiler bool, nsfw bool, err error) {
 				return
 			}
 
-			var body *io.ReadCloser
-			body, err = fetch.Fetch(listings[0].Data.Children[0].Data.SecureMedia.RedditVideo.DashURL)
+			var resp *http.Response
+			u, _ := url.Parse(listings[0].Data.Children[0].Data.SecureMedia.RedditVideo.DashURL)
+			resp, err = fetch.Fetch(u)
 			if err != nil {
 				return
 			}
-			defer (*body).Close()
+			defer (resp.Body).Close()
 
-			bytes, _ := io.ReadAll(*body)
+			bytes, _ := io.ReadAll(resp.Body)
 
 			mpd := new(video.MPD)
 			err = xml.Unmarshal(bytes, mpd)
