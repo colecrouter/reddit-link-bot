@@ -1,4 +1,13 @@
-package scrape
+package reddit
+
+import "io"
+
+type Media struct {
+	AudioURL string
+	VideoURL string
+	Audio    io.ReadCloser
+	Video    io.ReadCloser
+}
 
 type listing struct {
 	ID   string `json:"id"`

@@ -28,10 +28,21 @@ This will generate a `config.yml` file in the current directory. Insert your Dis
 You can tweak the settings to only allow the bot to respond in certain channels or to certain roles. You can also disable NSFW content.
 
 ```yml
-discord_token: ""
-channels: []
-roles: []
-no_nsfw: false
+discord:
+  token: ""
+  channels: []
+  roles: []
+  no_nsfw: false
+reddit:
+  client_id: ""
+  client_secret: ""
+  username: ""
+  password: ""
+```
+
+If you don't want to use the Reddit API, you can disable it by setting:
+```yml
+reddit: null
 ```
 
 ## Requirements

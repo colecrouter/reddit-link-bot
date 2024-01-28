@@ -7,10 +7,20 @@ import (
 )
 
 type Config struct {
-	DiscordToken string   `yaml:"discord_token"`
-	Channels     []string `yaml:"channels"`
-	Roles        []string `yaml:"roles"`
-	NoNSFW       bool     `yaml:"no_nsfw"`
+	Discord struct {
+		Token    string   `yaml:"token"`
+		Channels []string `yaml:"channels"`
+		Roles    []string `yaml:"roles"`
+		NoNSFW   bool     `yaml:"no_nsfw"`
+	}
+
+	// Optional
+	Reddit *struct {
+		ClientID     string `yaml:"client_id"`
+		ClientSecret string `yaml:"client_secret"`
+		Username     string `yaml:"username"`
+		Password     string `yaml:"password"`
+	} `yaml:"reddit"`
 }
 
 func (c *Config) Load() error {

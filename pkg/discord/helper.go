@@ -1,17 +1,19 @@
 package discord
 
 import (
+	"context"
 	"fmt"
-	"net/url"
 	"time"
 
-	"github.com/Mexican-Man/reddit-bot/pkg/scrape"
 	"github.com/Mexican-Man/reddit-bot/pkg/video"
 	"github.com/bwmarrin/discordgo"
 )
 
-func ToDiscordMessages(URL string) (msgs []discordgo.MessageSend, nsfw bool, err error) {
-	media, spoiler, nsfw, err := scrape.Scrape(URL)
+func (b *DiscordBot) toDiscordMessages(URL string) (msgs []discordgo.MessageSend, nsfw bool, err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	media, spoiler, nsfw, err := b.reddit.GetMedia(ctx, URL)
 	if err != nil {
 		return nil, false, err
 	}
@@ -59,10 +61,10 @@ func ToDiscordMessages(URL string) (msgs []discordgo.MessageSend, nsfw bool, err
 				addNewMessage()
 			}
 
-			audioURL, _ := url.Parse(m.AudioURL)
-			videoURL, _ := url.Parse(m.VideoURL)
+			// We can actually pass URLs directly to ffmpeg, but that requires a special
+			// build of ffmpeg with HTTPS enabled. Instead, we'll download the files manually
 
-			f2, err := video.Merge(audioURL, videoURL)
+			f2, err := video.Merge(m.Audio, m.Video)
 			if err != nil {
 				return nil, false, err
 			}
@@ -72,7 +74,7 @@ func ToDiscordMessages(URL string) (msgs []discordgo.MessageSend, nsfw bool, err
 				filename = "SPOILER_video.mp4"
 			}
 			currentMessage.Files = append(currentMessage.Files, &discordgo.File{
-				Name: filename, Reader: *f2, ContentType: "video/mp4",
+				Name: filename, Reader: f2, ContentType: "video/mp4",
 			})
 			videoCount++
 		}
