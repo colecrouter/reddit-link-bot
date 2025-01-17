@@ -64,7 +64,7 @@ func (b *RedditBot) GetMedia(ctx context.Context, link string) (media []Media, n
 	postURL.RawQuery = ""
 
 	// Extract subreddit, post ID from path
-	r := regexp.MustCompile(`^/r/([a-zA-Z0-9]+)/[a-z]+/([a-zA-Z0-9]+)(?:/.*)?$`)
+	r := regexp.MustCompile(`^/r/([a-zA-Z0-9_]+)/[a-z]+/([a-zA-Z0-9]+)(?:/.*)?$`)
 	matches := r.FindStringSubmatch(postURL.Path)
 	if len(matches) != 3 {
 		return nil, false, false, fmt.Errorf("invalid post URL: %s", link)
