@@ -96,36 +96,36 @@ func (b *RedditBot) GetMedia(ctx context.Context, link string) (media []Media, n
 	}
 
 	// Post should always be first listing
+	postData := &listings[0].Data.Children[0].Data
 
-	// The only way I know how figure out if a post has multiple media is by checking media_metadata, which may not exist
-	// If it doesn't exist, then there's only one media
+	// The only way I know is to figure out if a post has multiple media is by checking media_metadata
 	numMedia := 1
-	if listings[0].Data.Children[0].Data.MediaMetadata != nil {
-		numMedia = len(*listings[0].Data.Children[0].Data.MediaMetadata)
+	if postData.MediaMetadata != nil {
+		numMedia = len(*postData.MediaMetadata)
 	}
 
 	media = make([]Media, numMedia)
 
-	spoiler = listings[0].Data.Children[0].Data.Spoiler
-	nsfw = listings[0].Data.Children[0].Data.Over18
+	spoiler = postData.Spoiler
+	nsfw = postData.Over18
 
 	if numMedia == 1 {
 		// Default behaviour
-		if listings[0].Data.Children[0].Data.IsVideo {
-			if listings[0].Data.Children[0].Data.SecureMedia.RedditVideo.IsGif {
-				media[0].VideoURL = listings[0].Data.Children[0].Data.SecureMedia.RedditVideo.FallbackURL
+		if postData.IsVideo {
+			if postData.SecureMedia.RedditVideo.IsGif {
+				media[0].VideoURL = postData.SecureMedia.RedditVideo.FallbackURL
 				return
 			}
 
 			var resp *reddit.Response
-			u, _ := url.Parse(listings[0].Data.Children[0].Data.SecureMedia.RedditVideo.DashURL)
+			u, _ := url.Parse(postData.SecureMedia.RedditVideo.DashURL)
 			resp, err = b.reddit.Do(ctx, &http.Request{
 				URL: u,
 			}, nil)
 			if err != nil {
 				return
 			}
-			defer (resp.Body).Close()
+			defer resp.Body.Close()
 
 			bytes, _ := io.ReadAll(resp.Response.Body)
 
@@ -135,32 +135,42 @@ func (b *RedditBot) GetMedia(ctx context.Context, link string) (media []Media, n
 				return
 			}
 
-			audio, video, err := mpd.GetMediaLinks()
+			audio, videoLink, err := mpd.GetMediaLinks()
 			if err != nil {
 				return nil, false, false, err
 			}
 
 			if audio != "" {
-				media[0].AudioURL, _ = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, audio)
+				media[0].AudioURL, _ = url.JoinPath(postData.URLOverriddenByDest, audio)
 			}
-			if video != "" {
-				media[0].VideoURL, _ = url.JoinPath(listings[0].Data.Children[0].Data.URLOverriddenByDest, video)
+			if videoLink != "" {
+				media[0].VideoURL, _ = url.JoinPath(postData.URLOverriddenByDest, videoLink)
 			}
 
 		} else {
-			media[0].VideoURL = listings[0].Data.Children[0].Data.URLOverriddenByDest
+			media[0].VideoURL = postData.URLOverriddenByDest
 		}
 	} else {
-		// It's a gallery (only have to worry about images)
-		i := 0
-		for _, v := range *listings[0].Data.Children[0].Data.MediaMetadata {
-			// These ones have ampersands which will have been escaped by json.Unmarshal
-			media[i].VideoURL = strings.Replace(v.Source.URL, "&amp;", "&", -1)
-			i++
+		// It's a gallery; order images using GalleryData if available
+		if postData.GalleryData != nil && postData.MediaMetadata != nil {
+			orderedMedia := make([]Media, len(postData.GalleryData.Items))
+			for i, item := range postData.GalleryData.Items {
+				if meta, ok := (*postData.MediaMetadata)[item.MediaID]; ok {
+					orderedMedia[i].VideoURL = strings.Replace(meta.Source.URL, "&amp;", "&", -1)
+				}
+			}
+			media = orderedMedia
+		} else if postData.MediaMetadata != nil {
+			// Fallback to iterating over MediaMetadata map (order may be random)
+			i := 0
+			for _, v := range *postData.MediaMetadata {
+				media[i].VideoURL = strings.Replace(v.Source.URL, "&amp;", "&", -1)
+				i++
+			}
 		}
 	}
 
-	// Populate audio and video slices
+	// Populate audio and video ReadCloser fields
 	for i := range media {
 		if media[i].AudioURL != "" {
 			var resp *reddit.Response
@@ -171,7 +181,7 @@ func (b *RedditBot) GetMedia(ctx context.Context, link string) (media []Media, n
 			if err != nil {
 				return nil, false, false, err
 			}
-			defer (resp.Body).Close()
+			defer resp.Body.Close()
 
 			media[i].Audio = resp.Response.Body
 		}
@@ -184,7 +194,7 @@ func (b *RedditBot) GetMedia(ctx context.Context, link string) (media []Media, n
 			if err != nil {
 				return nil, false, false, err
 			}
-			defer (resp.Body).Close()
+			defer resp.Body.Close()
 
 			media[i].Video = resp.Response.Body
 		}

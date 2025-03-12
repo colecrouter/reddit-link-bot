@@ -2,6 +2,7 @@ package reddit
 
 import "io"
 
+// Media represents the media components of a Reddit post.
 type Media struct {
 	AudioURL string
 	VideoURL string
@@ -41,11 +42,13 @@ type listing struct {
 				IsVideo             bool           `json:"is_video"`
 				SecureMedia         *secureMedia   `json:"secure_media"`
 				MediaMetadata       *mediaMetadata `json:"media_metadata"`
+				GalleryData         *GalleryData   `json:"gallery_data,omitempty"`
 			} `json:"data"`
 		} `json:"children"`
 	} `json:"data"`
 }
 
+// secureMedia holds the details for Reddit videos.
 type secureMedia struct {
 	RedditVideo struct {
 		BitrateKbps       int    `json:"bitrate_kbps"`
@@ -61,10 +64,22 @@ type secureMedia struct {
 	} `json:"reddit_video"`
 }
 
+// mediaMetadata represents a mapping of media IDs to their metadata.
 type mediaMetadata map[string]struct {
 	Source struct {
 		Width  int    `json:"x"`
 		Height int    `json:"y"`
 		URL    string `json:"u"`
 	} `json:"s"`
+}
+
+// GalleryData holds the ordering information for gallery posts.
+type GalleryData struct {
+	Items []GalleryItem `json:"items"`
+}
+
+// GalleryItem defines a single gallery item with its media id and display order.
+type GalleryItem struct {
+	MediaID string `json:"media_id"`
+	Order   int    `json:"order"`
 }
