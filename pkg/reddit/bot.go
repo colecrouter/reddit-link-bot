@@ -51,7 +51,8 @@ func (b *RedditBot) GetMedia(ctx context.Context, link string) (media []Media, n
 	}
 
 	// Mobile links have a different ID
-	mobileLinkRegex := regexp.MustCompile(`^/r/[a-zA-Z0-9]+/s/`)
+	// Instead of https://www.reddit.com/r/.../comments/random_id, it's https://www.reddit.com/r/.../s/different_random_id
+	mobileLinkRegex := regexp.MustCompile(`^/r/[a-zA-Z0-9_]+/s/`)
 	if mobileLinkRegex.MatchString(postURL.Path) {
 		// Request page, get the actual ID
 		response, err := b.reddit.Do(ctx, &http.Request{URL: postURL}, nil)
@@ -75,12 +76,13 @@ func (b *RedditBot) GetMedia(ctx context.Context, link string) (media []Media, n
 
 	_, _, err = b.reddit.Post.Get(ctx, postID)
 	if err != nil {
-		return nil, false, false, fmt.Errorf("failed to get post: %w", err)
+		return nil, false, false, fmt.Errorf("failed to get post %s: %w", postID, err)
 	}
 
 	// Grab media from post
 	listings := []listing{}
-	newURL, _ := url.Parse(postURL.String() + ".json")
+	newURLString := strings.Replace(postURL.String()+".json", "www", "oauth", 1)
+	newURL, _ := url.Parse(newURLString)
 	_, err = b.reddit.Do(ctx, &http.Request{
 		URL: newURL,
 	}, &listings)
