@@ -29,6 +29,9 @@ func Merge(audio io.ReadCloser, video io.ReadCloser) (r io.ReadCloser, err error
 	if _, err := io.Copy(aFile, audio); err != nil {
 		return nil, fmt.Errorf("write audio temp: %w", err)
 	}
+	// We can close the input streams as we've consumed them fully.
+	video.Close()
+	audio.Close()
 
 	cmd := exec.Command("ffmpeg", "-y", "-i", vFile.Name(), "-i", aFile.Name(), "-map", "0:0", "-map", "1:0", "-f", "ismv", "-c:v", "copy", "pipe:")
 	cmd.Stderr = os.Stderr

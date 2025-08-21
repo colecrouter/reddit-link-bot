@@ -181,8 +181,8 @@ func (b *RedditBot) GetMedia(ctx context.Context, link string) (media []Media, n
 			if err != nil {
 				return nil, false, false, err
 			}
-			defer resp.Body.Close()
-
+			// Do NOT close here; the caller will stream from this body. It will be
+			// closed after consumption (by Merge), preventing premature close errors.
 			media[i].Audio = resp.Response.Body
 		}
 		if media[i].VideoURL != "" {
@@ -194,8 +194,7 @@ func (b *RedditBot) GetMedia(ctx context.Context, link string) (media []Media, n
 			if err != nil {
 				return nil, false, false, err
 			}
-			defer resp.Body.Close()
-
+			// Do NOT close here; see comment above.
 			media[i].Video = resp.Response.Body
 		}
 	}
