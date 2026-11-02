@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/Mexican-Man/reddit-bot/pkg/config"
@@ -18,7 +19,11 @@ func main() {
 	err := cfg.Load()
 	if err != nil {
 		fmt.Println(err)
-		return
+		os.Exit(1)
+	}
+	if strings.TrimSpace(cfg.Discord.Token) == "" {
+		fmt.Fprintln(os.Stderr, "discord.token is required in config.yml")
+		os.Exit(1)
 	}
 
 	// Start custom bot
@@ -26,8 +31,9 @@ func main() {
 	err = discord.Start()
 	if err != nil {
 		fmt.Println(err)
-		return
+		os.Exit(1)
 	}
+	fmt.Println("Discord gateway connected")
 
 	defer discord.Close()
 

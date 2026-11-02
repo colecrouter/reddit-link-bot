@@ -35,7 +35,7 @@ func NewDiscordBot(cfg config.Config) *DiscordBot {
 	discord.AddHandler(b.ready)
 
 	// Set intents
-	discord.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages)
+	discord.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent)
 
 	return &DiscordBot{
 		config:  cfg,
@@ -134,6 +134,7 @@ ERROR:
 }
 
 func (d *DiscordBot) ready(s *discordgo.Session, e *discordgo.Ready) {
+	fmt.Printf("Discord ready as %s#%s\n", e.User.Username, e.User.Discriminator)
 	// Set status
 	act := []*discordgo.Activity{
 		{
