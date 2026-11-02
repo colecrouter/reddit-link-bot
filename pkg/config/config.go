@@ -58,5 +58,9 @@ func (c *Config) Load() error {
 		return err
 	}
 
-	return nil
+	// Remove stale bytes when the serialized configuration becomes shorter.
+	if err := f.Truncate(int64(len(b))); err != nil {
+		return err
+	}
+	return f.Sync()
 }
